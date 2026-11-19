@@ -1,1 +1,85 @@
-//structure
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:latest
+    environment:
+      DOCKER_API_VERSION: "1.44"
+    command:
+      - "--providers.swarm=true"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=slae_appnet"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - appnet
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: slae
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  backend:
+    image: slae-app:latest
+    environment:
+      ROLE: WORKER
+      CONN_STR: "Host=postgres;Database=slae;Username=app;Password=secret"
+      JWT_SECRET: "super_secret_key_at_least_32_bytes_long!"
+      MAX_SLOTS: "2"
+      MAX_N: "40000"
+      MAX_ACTIVE_PER_USER: "10"
+      TASK_TIMEOUT_SEC: "60"
+      NODE_NAME: "{{.Node.Hostname}}"
+    networks:
+      - appnet
+    deploy:
+      replicas: 2
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.slae.rule=PathPrefix(`/`)"
+        - "traefik.http.routers.slae.entrypoints=websecure"
+        - "traefik.http.routers.slae.tls=true"
+        - "traefik.http.services.slae.loadbalancer.server.port=8080"
+
+  autoscaler:
+    image: slae-app:latest
+    environment:
+      ROLE: AUTOSCALER
+      CONN_STR: "Host=postgres;Database=slae;Username=app;Password=secret"
+      SERVICE_NAME: "slae_backend"
+      MIN_REPLICAS: "2"
+      MAX_REPLICAS: "5"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - appnet
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  appnet:
+    driver: overlay
+
+volumes:
+  pgdata:
