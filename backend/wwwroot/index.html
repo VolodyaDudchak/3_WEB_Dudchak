@@ -1,1 +1,58 @@
-//structure
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <title>SLAE Cluster</title>
+  <style>
+    body { font-family: monospace; max-width: 900px; margin: 20px auto; padding: 0 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    .hidden { display: none; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h2>SLAE Distributed Solver</h2>
+
+  <div id="authBox">
+    <div class="row">
+      <input id="user" placeholder="Username">
+      <input id="pass" type="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <button onclick="register()">Register</button>
+    </div>
+    <div id="authMsg"></div>
+  </div>
+
+  <div id="appBox" class="hidden">
+    <div class="row">
+      <input id="inpN" type="number" value="1200" placeholder="N (unknowns)">
+      <input id="inpSeed" type="number" value="42" placeholder="Seed">
+      <button onclick="startTask()">Solve SLAE</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+    <div id="taskMsg"></div>
+
+    <h3>My Tasks</h3>
+    <table>
+      <thead><tr><th>ID</th><th>N</th><th>Status</th><th>Progress / Queue</th><th>Worker</th><th>Result</th><th>Action</th></tr></thead>
+      <tbody id="tasksBody"></tbody>
+    </table>
+
+    <div id="adminBox" class="hidden">
+      <h3>Admin: Cluster Nodes</h3>
+      <table>
+        <thead><tr><th>Container</th><th>Node</th><th>CPU %</th><th>RAM MB</th><th>Active Tasks</th></tr></thead>
+        <tbody id="workersBody"></tbody>
+      </table>
+      <h3>Admin: All Active Processes</h3>
+      <table>
+        <thead><tr><th>ID</th><th>User</th><th>N</th><th>Status</th><th>Progress</th><th>Worker</th></tr></thead>
+        <tbody id="allTasksBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
